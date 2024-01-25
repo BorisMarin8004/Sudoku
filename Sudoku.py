@@ -39,11 +39,15 @@ class Sudoku:
         self.saved_board_solution = None
         self.board = board \
             if board is not None \
-            else np.zeros(shape=(Sudoku.BOARD_SIDE_VALUE, Sudoku.BOARD_SIDE_VALUE), dtype=int)
+            else Sudoku.__get_empty_board()
         self.variants = self.generate_variants()
         if generate_board:
             self.generate_board()
-        self.old_board = cp(board)
+        self.old_board = cp(self.board if board is None else board)
+
+    @staticmethod
+    def __get_empty_board() -> np.array:
+        return np.zeros(shape=(Sudoku.BOARD_SIDE_VALUE, Sudoku.BOARD_SIDE_VALUE), dtype=int)
 
     @staticmethod
     def __get_number_range() -> np.array:
@@ -51,7 +55,7 @@ class Sudoku:
 
     @staticmethod
     def __get_random_row() -> np.array:
-        return np.array(rd.sample(set(Sudoku.__get_number_range()), Sudoku.BOARD_SIDE_VALUE))
+        return np.array(rd.sample(list(Sudoku.__get_number_range()), Sudoku.BOARD_SIDE_VALUE))
 
     @staticmethod
     def __get_random_coordinate() -> tuple:
@@ -198,8 +202,8 @@ class Sudoku:
             func()
             print("--- %s seconds ---" % (time.time() - start_time))
 
-        # time_it(self.__solve_board_backtrace)
-        # self.reset_board()
+        time_it(self.__solve_board_backtrace)
+        self.reset_board()
         time_it(self.__solve_board_optimized_backtrace)
 
 
