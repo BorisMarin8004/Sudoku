@@ -100,15 +100,21 @@ class Sudoku:
             + \
             next(i for i, s_range in enumerate(self.square_ranges) if x in s_range)
 
-    def __get_context_variants(self, coordinates: tuple) -> np.array:
+    def __get_context(self, coordinates: tuple) -> list:
         y, x = coordinates
-        return Sudoku.__get_number_range()[np.isin(Sudoku.__get_number_range(), np.unique(np.concatenate([
+        return [
             self.get_rows()[y],
             self.get_columns()[x],
             self.get_squares()[self.__get_square_from_coordinates(coordinates)].flatten()
-        ])), invert=True)]
+        ]
 
-    def __get_board_state(self) -> bool:
+    def __get_context_variants(self, coordinates: tuple) -> np.array:
+        return Sudoku.__get_number_range()[np.isin(
+            Sudoku.__get_number_range(),
+            np.unique(np.concatenate(self.__get_context(coordinates))), invert=True
+        )]
+
+    def __get_board_state(self, coordinates: tuple = None) -> bool:
         def get_unique_state(arr_outer: np.array) -> bool:
             counts_outer = np.array(
                 list(
@@ -121,7 +127,12 @@ class Sudoku:
             )[:, 1]
             return all(list(map(lambda counts_inner: np.all(counts_inner <= 1), counts_outer)))
 
-        return all(map(get_unique_state, (self.get_rows(), self.get_columns(), self.get_squares())))
+        return all(map(
+            get_unique_state,
+            (self.get_rows(), self.get_columns(), self.get_squares())
+            if coordinates is None else
+            [self.__get_context(coordinates)]
+        ))
 
     def __solve_board_backtrace(self, coordinates: tuple = (0, 0)) -> bool:
         if coordinates is None:
@@ -159,7 +170,7 @@ class Sudoku:
             return self.__solve_board_optimized_backtrace(next_coordinates)
         for variant in variants:
             self.board[coordinates] = variant
-            if self.__get_board_state():
+            if self.__get_board_state(coordinates):
                 if not self.__solve_board_optimized_backtrace(next_coordinates):
                     self.board[coordinates] = 0
                 else:
@@ -206,21 +217,25 @@ class Sudoku:
         self.reset_board()
         time_it(self.__solve_board_optimized_backtrace)
 
+    def test(self):
+        return self.__get_board_state()
+
 
 if __name__ == "__main__":
     # sudoku = Sudoku(0, generate_board=False, board=np.array(
-    #     [[8, 0, 0, 1, 0, 0, 0, 7, 0],
-    #      [0, 2, 0, 0, 4, 0, 8, 0, 0],
-    #      [0, 6, 0, 7, 0, 0, 0, 0, 0],
-    #      [0, 0, 0, 4, 7, 0, 9, 0, 8],
-    #      [2, 4, 0, 0, 8, 0, 0, 0, 0],
-    #      [0, 3, 8, 0, 0, 0, 0, 0, 5],
-    #      [0, 8, 0, 6, 0, 4, 1, 0, 0],
-    #      [9, 0, 0, 0, 0, 7, 2, 0, 4],
-    #      [0, 0, 5, 8, 1, 0, 0, 0, 6]]
+    #     [[9, 5, 1, 2, 4, 8, 6, 3, 7],
+    #      [2, 8, 3, 1, 7, 6, 5, 4, 9],
+    #      [4, 7, 6, 3, 5, 9, 8, 1, 2],
+    #      [8, 9, 2, 6, 1, 4, 7, 5, 3],
+    #      [5, 3, 4, 7, 9, 2, 1, 6, 8],
+    #      [1, 6, 7, 8, 3, 5, 9, 2, 4],
+    #      [3, 1, 9, 5, 2, 7, 4, 8, 6],
+    #      [6, 4, 5, 9, 8, 3, 2, 7, 1],
+    #      [7, 2, 8, 4, 6, 1, 3, 9, 5]]
     # ))
 
     sudoku = Sudoku(60)
     print(sudoku)
     sudoku.solve_board()
     print(sudoku)
+    print(sudoku.test())
